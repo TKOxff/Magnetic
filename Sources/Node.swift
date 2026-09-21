@@ -17,11 +17,16 @@ import SpriteKit
         label.fontColor = Defaults.fontColor
         label.verticalAlignmentMode = .center
         label.width = self.frame.width
-        label.separator = " "
+        // TK: 구분자는 설정 할 수 있도록 하는게 낫나~
+        label.separator = ";"
+        label.isSelected = self.isSelected
         addChild(label)
         return label
     }()
-    
+  
+    /// TK
+    open var parentMagnetic: Magnetic?
+  
     /**
      The text displayed by the node.
      */
@@ -64,9 +69,13 @@ import SpriteKit
         didSet {
             guard isSelected != oldValue else { return }
             if isSelected {
+                //TK
+                label.isSelected = true
                 selectedAnimation()
                 accessibilityTraits = .selected
             } else {
+                //TK
+                label.isSelected = false
                 deselectedAnimation()
                 accessibilityTraits = .none
             }
@@ -203,8 +212,9 @@ import SpriteKit
      
      - Returns: A new node.
      */
-    public init(text: String? = nil, image: UIImage? = nil, color: UIColor, path: CGPath, marginScale: CGFloat = 1.01) {
+    public init(parent: Magnetic, text: String? = nil, image: UIImage? = nil, color: UIColor, path: CGPath, marginScale: CGFloat = 1.01) {
         super.init()
+        self.parentMagnetic = parent
         self.path = path
         regeneratePhysicsBody(withPath: path)
         self.color = color
@@ -227,9 +237,9 @@ import SpriteKit
      
      - Returns: A new node.
      */
-    public convenience init(text: String? = nil, image: UIImage? = nil, color: UIColor, radius: CGFloat, marginScale: CGFloat = 1.01) {
+    public convenience init(parent: Magnetic, text: String? = nil, image: UIImage? = nil, color: UIColor, radius: CGFloat, marginScale: CGFloat = 1.01) {
         let path = SKShapeNode(circleOfRadius: radius).path!
-        self.init(text: text, image: image, color: color, path: path, marginScale: marginScale)
+        self.init(parent: parent, text: text, image: image, color: color, path: path, marginScale: marginScale)
     }
     
     required public init?(coder aDecoder: NSCoder) {
@@ -243,10 +253,19 @@ import SpriteKit
         self.accessibilityLabel = text
     }
     
+    /// TK: 완료 후 추가액션 함수 추가
+    open func removeFromParentEx(exAction: @escaping () -> Void) {
+      removedAnimation(completion: {
+          super.removeFromParent()
+          exAction()
+      })
+    }
+  
     override open func removeFromParent() {
-        removedAnimation() {
+        // 애니메이션 완료 후 등록된 클로저에서 실제 삭제 처리
+        removedAnimation(completion: {
             super.removeFromParent()
-        }
+        })
     }
     
     /**
@@ -306,9 +325,17 @@ import SpriteKit
           run(.group([
             scaleAction,
             .colorTransition(from: originalColor, to: selectedColor, duration: animationDuration)
-          ]))
+          ]), completion: { () -> Void in
+            if let mag = self.parentMagnetic {
+              mag.magneticDelegate?.magnetic(mag, didSelectEnd: self)
+            }
+          })
         } else {
-          run(scaleAction)
+          run(scaleAction, completion: { () -> Void in
+            if let mag = self.parentMagnetic {
+              mag.magneticDelegate?.magnetic(mag, didSelectEnd: self)
+            }
+          })
         }
 
         if let texture = texture {
@@ -343,10 +370,16 @@ import SpriteKit
      
      - important: You must call the completion block.
      
-     - parameter completion: The block to execute when the animation is complete. You must call this handler and should do so as soon as possible.
+     - parameter completion:
+        The block to execute when the animation is complete.
+        You must call this handler and should do so as soon as possible.
      */
     open func removedAnimation(completion: @escaping () -> Void) {
-        run(.group([.fadeOut(withDuration: animationDuration), .scale(to: 0, duration: animationDuration)]), completion: completion)
+        run(.group([
+            .fadeOut(withDuration: animationDuration),
+            .scale(to: 0, duration: animationDuration)
+        ]),
+            completion: completion)
     }
     
 }
