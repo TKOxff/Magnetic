@@ -1,3 +1,25 @@
+> **이 저장소는 [efremidze/Magnetic](https://github.com/efremidze/Magnetic)의 포크입니다.**
+>
+> `marumaru` 브랜치는 upstream **3.3.3** 위에 [KanjiMaru(MaruMaru)](https://github.com/TKOxff/MaruMaru)
+> 앱이 의존하는 수정분 221줄(3파일)을 올린 것입니다. 원본 패치와 근거는 앱 저장소의
+> `.ai-workflow/docs/patches/`에 있습니다.
+>
+> | 구분 | 추가된 심볼 |
+> | --- | --- |
+> | 프로토콜 | `magnetic(_:didSelectEnd:)` (필수), `magnetic(_:removed:)` (`@objc optional`) |
+> | 동작 플래그 | `longPressAnimationAndRemove`, `longPressDuration` |
+> | 터치 판정 교체 | `touchedNode` / `touchingLocation` + `tkTouchedEnded()` — 드래그 무시, 동일 노드 판정 |
+> | 기능 | `Magnetic.removeTargets(targetSet:)` |
+> | 기능 | `Node.removeFromParentEx(exAction:)`, `Node.parentMagnetic` |
+> | 기능 | `SKMultilineLabelNode.phonetic` (후리가나), `isSelected` |
+>
+> `touchesBegan` / `touchesEnded`는 upstream 동작을 **교체**합니다. upstream이 터치 처리를 바꾸면
+> 수동 병합이 필요합니다. 해당 영역은 2022년 이후 변경되지 않았습니다.
+>
+> 태그는 `<upstream 버전>-marumaru.<패치 리비전>` 형식입니다 (예: `3.3.3-marumaru.1`).
+
+---
+
 # Magnetic
 
 [![CI](https://github.com/efremidze/Magnetic/actions/workflows/ci.yml/badge.svg)](https://github.com/efremidze/Magnetic/actions/workflows/ci.yml)
