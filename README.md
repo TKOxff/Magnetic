@@ -16,7 +16,23 @@
 > `touchesBegan` / `touchesEnded`는 upstream 동작을 **교체**합니다. upstream이 터치 처리를 바꾸면
 > 수동 병합이 필요합니다. 해당 영역은 2022년 이후 변경되지 않았습니다.
 >
-> 태그는 `<upstream 버전>-marumaru.<패치 리비전>` 형식입니다 (예: `3.3.3-marumaru.1`).
+> ### `3.3.3-marumaru.2` — 물리 경계와 자기장 (`Magnetic.swift`)
+>
+> | 대상 | upstream | 포크 |
+> | --- | --- | --- |
+> | `configure()` edge loop | 폭을 `radius`(= `√max(size) × 100`)로 덮어쓴다 | **씬 프레임으로 한정** |
+> | `configure()` `magneticField.strength` | `strength` | `-marumaru.1`에서 `strength * 2`로 올렸던 것을 **`strength`로 환원** |
+> | `addChild()` 스폰 x | `-node.frame.width` / `frame.width + node.frame.width` (경계 밖) | **경계 안쪽** (`inset` / `frame.width - inset`) |
+> | `addChild()` 등장 연출 | 없음 (자기장이 밖에서 끌어당김) | **0.2초 페이드인** |
+>
+> **세 변경은 한 묶음입니다.** upstream의 경계는 씬보다 수천 pt 넓어(402×874 씬에서
+> `x ∈ [-1478, +1478]`) 노드가 화면 밖으로 흘러나갔고, 밖에서 스폰해 끌어당기는 연출이
+> 바로 그 넓은 경계에 의존했습니다. 경계만 좁히면 노드가 edge loop에 막혀 들어오지 못합니다.
+>
+> 등장 연출에 `setScale`을 쓰지 않은 이유: SpriteKit은 `physicsBody`를 함께 스케일하지 않아
+> 작게 보이는 노드가 원래 크기로 이웃을 밀어내는 불일치가 생깁니다.
+>
+> 태그는 `<upstream 버전>-marumaru.<패치 리비전>` 형식입니다 (예: `3.3.3-marumaru.2`).
 
 ---
 
