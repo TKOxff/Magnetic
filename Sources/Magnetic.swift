@@ -101,28 +101,44 @@ import SpriteKit
         let radius = strength.squareRoot() * 100
         
         physicsWorld.gravity = CGVector(dx: 0, dy: 0)
-        physicsBody = SKPhysicsBody(edgeLoopFrom: { () -> CGRect in
-            var frame = self.frame
-            frame.size.width = CGFloat(radius)
-            frame.origin.x -= frame.size.width / 2
-            return frame
-        }())
-        
+        // TK: 물리 경계를 씬 프레임으로 한정한다.
+        // upstream은 경계의 폭을 radius(= √max(size) × 100)로 덮어써서 좌우 벽이
+        // 씬 밖 수천 pt 지점에 생겼다. 402×874 씬이면 x ∈ [-1478, +1478]이 되어
+        // 노드가 화면 밖으로 자유롭게 흘러나간다. 세로는 프레임을 그대로 쓰므로
+        // 가로만 새는 비대칭이 있었다.
+        physicsBody = SKPhysicsBody(edgeLoopFrom: frame)
+
+        // region/minimumRadius는 자기장의 작용 범위다. 경계와 달리 씬 전체를
+        // 넉넉히 덮어야 하므로 radius를 그대로 쓴다.
         magneticField.region = SKRegion(radius: radius)
         magneticField.minimumRadius = radius
-        // moving speed
-        magneticField.strength = strength * 2
+        // TK: moving speed. upstream 값(strength)으로 환원했다.
+        // strength * 2는 구심력이 물리 솔버의 분리력을 눌러 노드가 서로 파묻혔다.
+        magneticField.strength = strength
         magneticField.position = CGPoint(x: size.width / 2, y: size.height / 2)
     }
     
     override open func addChild(_ node: SKNode) {
-        var x = -node.frame.width // left
+        // TK: 경계를 씬 프레임으로 좁혔으므로(configure 참고) 스폰 지점도 경계 안이어야 한다.
+        // upstream은 x = -node.frame.width 로 경계 밖에 놓고 자기장으로 빨아들였다 —
+        // 좁아진 경계에서는 노드가 edge loop에 막혀 영영 들어오지 못한다.
+        // 좌/우 번갈아 넣는 규칙(children.count % 2)은 분포 편향을 만들지 않도록 유지한다.
+        let inset = node.frame.width / 2
+        var x = inset // left
         if children.count % 2 == 0 {
-            x = frame.width + node.frame.width // right
+            x = frame.width - inset // right
         }
         let y = CGFloat.random(node.frame.height, frame.height - node.frame.height)
         node.position = CGPoint(x: x, y: y)
         super.addChild(node)
+
+        // TK: 화면 밖에서 빨려 들어오는 연출이 사라진 자리를 페이드인으로 대체한다.
+        // setScale은 쓰지 않는다 — SpriteKit은 physicsBody를 함께 스케일하지 않아
+        // 작게 보이는 노드가 원래 크기로 이웃을 밀어내는 불일치가 생긴다.
+        if node is Node {
+            node.alpha = 0
+            node.run(.fadeIn(withDuration: 0.2))
+        }
     }
     
 }
