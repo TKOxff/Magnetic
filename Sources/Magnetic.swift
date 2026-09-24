@@ -33,6 +33,20 @@ import SpriteKit
     }()
     
     /**
+     TK: 노드를 중앙으로 끌어당기는 자기장 세기의 배율.
+
+     실제 세기는 `max(size.width, size.height) * magneticFieldStrengthScale`이다.
+     1.0이 upstream과 같은 기준값이고, 올리면 노드가 더 빨리 모인다.
+     너무 올리면 구심력이 물리 솔버의 분리력을 눌러 노드가 서로 파묻힌다.
+
+     런타임에 바꿀 수 있도록 didSet에서 `configure()`를 다시 호출한다 —
+     앱의 옵션 화면에서 조절하면 즉시 반영된다.
+     */
+    open var magneticFieldStrengthScale: Float = 1.0 {
+        didSet { configure() }
+    }
+
+    /**
      Controls whether you can select multiple nodes.
      */
     open var allowsMultipleSelection: Bool = true
@@ -112,9 +126,11 @@ import SpriteKit
         // 넉넉히 덮어야 하므로 radius를 그대로 쓴다.
         magneticField.region = SKRegion(radius: radius)
         magneticField.minimumRadius = radius
-        // TK: moving speed. upstream 값(strength)으로 환원했다.
-        // strength * 2는 구심력이 물리 솔버의 분리력을 눌러 노드가 서로 파묻혔다.
-        magneticField.strength = strength
+        // TK: moving speed. 노드가 중앙으로 모이는 속도다.
+        // 기준값은 upstream과 같은 strength이고, 배율을 앱에서 조절할 수 있게 뺐다
+        // (magneticFieldStrengthScale). 너무 크면 구심력이 물리 솔버의 분리력을 눌러
+        // 노드가 서로 파묻힌다 — 예전에 하드코딩했던 2배가 그랬다.
+        magneticField.strength = strength * magneticFieldStrengthScale
         magneticField.position = CGPoint(x: size.width / 2, y: size.height / 2)
     }
     
