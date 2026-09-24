@@ -123,10 +123,15 @@ import SpriteKit
         // upstream은 x = -node.frame.width 로 경계 밖에 놓고 자기장으로 빨아들였다 —
         // 좁아진 경계에서는 노드가 edge loop에 막혀 영영 들어오지 못한다.
         // 좌/우 번갈아 넣는 규칙(children.count % 2)은 분포 편향을 만들지 않도록 유지한다.
-        let inset = node.frame.width / 2
-        var x = inset // left
+        //
+        // 여백은 반경이 아니라 **지름**이다. 반경으로 두면 노드가 벽에 정확히 접한 채
+        // 생성되고, 물리 바디(marginScale 1.01로 살짝 큰 폴리곤)가 edge loop와 겹쳐
+        // 솔버가 풀지 못한 채 벽에 박힌다. 노드 수가 적으면 서로 밀어낼 힘도 없어
+        // 자기장을 무시하고 끝까지 가장자리에 붙어 있었다 (히라가나 10개에서 실측).
+        let margin = node.frame.width
+        var x = margin // left
         if children.count % 2 == 0 {
-            x = frame.width - inset // right
+            x = frame.width - margin // right
         }
         let y = CGFloat.random(node.frame.height, frame.height - node.frame.height)
         node.position = CGPoint(x: x, y: y)
